@@ -1,0 +1,6 @@
+notes
+/target
+**/*.rs.bk
+.DS_Store
+.tvfile.csv
+doc
