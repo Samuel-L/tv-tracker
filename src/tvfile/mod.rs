@@ -1,7 +1,10 @@
 use std::error::Error;
 use std::fs;
+use std::io::BufReader;
 use std::io::Read;
 use std::io::Write;
+use std::io::SeekFrom;
+use std::io::Seek;
 use std::path::Path;
 
 /// The default filename for the `tvfile`
@@ -62,6 +65,52 @@ pub fn store_series(filename: &str, maze_id: i32, title: &str, latest: &str) {
     if let Err(e) = writeln!(file, "{}", series_string) {
         eprintln!("Couldn't write to file: {}", e);
     }
+}
+
+/// Removes a tv series from the tvfile
+/// # Arguments
+/// * `filename` - A string containing the filename
+/// * `maze_id` - The ID of the series on the TVMaze API to-be-removed
+///
+/// # Example usage
+/// ```
+/// tvfile::remove_series(tvfile::FILENAME, 82);
+/// ```
+pub fn remove_series(filename: &str, target_maze_id: i32) {
+    let mut file = fs::OpenOptions::new()
+        .read(true)
+        .open(filename)
+        .unwrap();
+
+    let mut file_content = String::new();
+    file.read_to_string(&mut file_content).ok().unwrap();
+
+    let mut series = "".to_string();
+    for (index, line) in file_content.lines().enumerate() {
+        if index == 0 {
+            series.push_str(&format!("{}\n", &line));
+            continue;
+        }
+
+        let maze_id: &i32 = &line[0..line.find(",").unwrap()].parse().unwrap();
+
+        if maze_id != &target_maze_id {
+            series.push_str(&format!("{}\n", &line));
+        }
+    }
+
+    fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(filename)
+        .unwrap();
+
+    file = fs::OpenOptions::new()
+        .write(true)
+        .open(filename)
+        .unwrap();
+
+    file.write_all(series.as_bytes()).unwrap();
 }
 
 #[cfg(test)]
